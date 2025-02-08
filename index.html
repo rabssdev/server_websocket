@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrôle des Moving Heads</title>
+    <script>
+        let socket = new WebSocket("ws://localhost:3000");
+
+        socket.onopen = () => console.log("✅ Connecté au serveur WebSocket");
+        socket.onerror = (error) => console.error("❌ WebSocket Error: ", error);
+        socket.onmessage = (event) => console.log("📩 Message du serveur: ", event.data);
+
+        function sendDMXValue(movingHead, axis, value) {
+            if (socket.readyState === WebSocket.OPEN) {
+                const message = JSON.stringify({ movingHead, axis, value });
+                socket.send(message);
+                console.log(`Envoyé : ${message}`);
+            } else {
+                console.warn("WebSocket non connecté");
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Contrôle des Moving Heads</h1>
+
+    <h2>Moving Head 1</h2>
+    <label>Pan (0-255): </label>
+    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH1', 'pan', this.value)"><br><br>
+
+    <label>Tilt (0-255): </label>
+    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH1', 'tilt', this.value)"><br><br>
+
+    <label>Clignotement (0-255): </label>
+    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH1', 'strobe', this.value)"><br><br>
+
+    <h2>Moving Head 2</h2>
+    <label>Pan (0-255): </label>
+    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH2', 'pan', this.value)"><br><br>
+
+    <label>Tilt (0-255): </label>
+    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH2', 'tilt', this.value)"><br><br>
+
+    <label>Clignotement (0-255): </label>
+    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH2', 'strobe', this.value)">
+</body>
+</html>
