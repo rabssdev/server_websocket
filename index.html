@@ -3,46 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contrôle des Moving Heads</title>
+    <title>Simulation DMX</title>
+    <style>
+        #circle {
+            width: 50px;
+            height: 50px;
+            background-color: red;
+            border-radius: 50%;
+            display: none;
+            margin: 20px auto;
+        }
+    </style>
     <script>
-        let socket = new WebSocket("ws://localhost:3000");
+        let socket = new WebSocket("ws://localhost:3000"); // WebSocket vers le serveur DMX
 
-        socket.onopen = () => console.log("✅ Connecté au serveur WebSocket");
-        socket.onerror = (error) => console.error("❌ WebSocket Error: ", error);
-        socket.onmessage = (event) => console.log("📩 Message du serveur: ", event.data);
+        socket.onopen = function () {
+            console.log("🔌 Connecté au WebSocket !");
+        };
 
-        function sendDMXValue(movingHead, axis, value) {
-            if (socket.readyState === WebSocket.OPEN) {
-                const message = JSON.stringify({ movingHead, axis, value });
-                socket.send(message);
-                console.log(`Envoyé : ${message}`);
-            } else {
-                console.warn("WebSocket non connecté");
+        socket.onmessage = function (event) {
+            let data = JSON.parse(event.data);
+            console.log("📥 Données reçues :", data);
+            if (data.tempo) {
+                document.getElementById("status").innerText = "🟢 Tempo détecté : " + data.tempo + " BPM";
+                startBlinking(data.tempo);
             }
+        };
+
+        async function sendMusic() {
+            let fileInput = document.getElementById("fileInput");
+            let file = fileInput.files[0];
+
+            if (!file) {
+                alert("Sélectionne un fichier !");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                let response = await fetch("http://localhost:5000/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                let result = await response.text();
+                console.log("📤 Fichier envoyé :", result);
+                document.getElementById("status").innerText = "📀 Fichier envoyé, en attente de l'analyse...";
+            } catch (error) {
+                console.error("❌ Erreur d'envoi :", error);
+            }
+        }
+
+        function startBlinking(tempo) {
+            let interval = 60000 / tempo; // Convertir BPM en intervalle de clignotement
+            let circle = document.getElementById("circle");
+            circle.style.display = "block";
+
+            setInterval(() => {
+                circle.style.visibility = (circle.style.visibility === 'hidden' ? 'visible' : 'hidden');
+            }, interval);
         }
     </script>
 </head>
 <body>
-    <h1>Contrôle des Moving Heads</h1>
-
-    <h2>Moving Head 1</h2>
-    <label>Pan (0-255): </label>
-    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH1', 'pan', this.value)"><br><br>
-
-    <label>Tilt (0-255): </label>
-    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH1', 'tilt', this.value)"><br><br>
-
-    <label>Clignotement (0-255): </label>
-    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH1', 'strobe', this.value)"><br><br>
-
-    <h2>Moving Head 2</h2>
-    <label>Pan (0-255): </label>
-    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH2', 'pan', this.value)"><br><br>
-
-    <label>Tilt (0-255): </label>
-    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH2', 'tilt', this.value)"><br><br>
-
-    <label>Clignotement (0-255): </label>
-    <input type="range" min="0" max="255" step="1" oninput="sendDMXValue('MH2', 'strobe', this.value)">
+    <h1>Simulation DMX</h1>
+    <input type="file" id="fileInput">
+    <button onclick="sendMusic()">Envoyer la musique</button>
+    <p id="status">🔴 En attente...</p>
+    <div id="circle"></div>
 </body>
 </html>
